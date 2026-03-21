@@ -2,7 +2,7 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import FeatureCards from "@/components/FeatureCards";
 import About from "@/components/About";
-import SamudraManthan from "@/components/SamudraManthan";
+import NewsEvents from "@/components/NewsEvents";
 import Stats from "@/components/Stats";
 import Insights from "@/components/Insights";
 import Chatbot from "@/components/Chatbot";
@@ -16,7 +16,7 @@ const Index = () => {
         <Hero />
         <FeatureCards />
         <About />
-        <SamudraManthan />
+        <NewsEvents />
         <Stats />
         <Insights />
       </main>

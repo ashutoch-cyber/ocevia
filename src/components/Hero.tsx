@@ -1,9 +1,39 @@
 import { motion } from "framer-motion";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-ocean.jpg";
+import AuthModal from "@/components/AuthModal";
+import { supabase } from "@/supabaseClient";
 
 export default function Hero() {
+  const [showAuth, setShowAuth] = useState(false);
   const navigate = useNavigate();
+
+  const withTimeout = (promise, ms) => {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Session check timed out")), ms);
+      }),
+    ]);
+  };
+
+  const handleExploreRiskMap = async () => {
+    try {
+      const {
+        data: { session },
+      } = await withTimeout(supabase.auth.getSession(), 3000);
+
+      if (session?.user) {
+        navigate("/risk-map");
+        return;
+      }
+
+      setShowAuth(true);
+    } catch (_error) {
+      setShowAuth(true);
+    }
+  };
 
   return (
     <section className="relative min-h-[700px] flex items-center overflow-hidden pt-20 md:pt-24 pb-52">
@@ -36,7 +66,7 @@ export default function Hero() {
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-block">
             <button
               type="button"
-              onClick={() => navigate("/risk-map")}
+              onClick={handleExploreRiskMap}
               className="bg-cta hover:bg-cta/90 text-accent-foreground font-bold px-8 py-4 rounded-full shadow-lg shadow-cta/20 transition-colors inline-block"
             >
               Explore Risk Map
@@ -44,6 +74,7 @@ export default function Hero() {
           </motion.div>
         </motion.div>
       </div>
+      <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
     </section>
   );
 }
