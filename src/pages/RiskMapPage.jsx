@@ -92,19 +92,19 @@ const RiskMapPage = () => {
         </button>
       } />
       <main className="pb-16">
-        <div className="page-container">
+        <div className="page-container px-2 xs:px-4 md:px-8 pt-8 md:pt-16">
           <section>
-            <div className="max-w-3xl mb-6 md:mb-8 mx-auto text-center">
-              <h1 className="page-title font-heading font-bold text-4xl md:text-6xl text-primary mb-4 tracking-[-0.02em]">
+            <div className="max-w-3xl mb-4 md:mb-8 mx-auto text-center">
+              <h1 className="page-title font-heading font-bold text-2xl xs:text-4xl md:text-6xl text-primary mb-2 md:mb-4 tracking-[-0.02em]">
                 Cyclone Risk Map
               </h1>
-              <p className="page-subtitle text-base md:text-lg text-muted-foreground leading-relaxed">
+              <p className="page-subtitle text-sm xs:text-base md:text-lg text-muted-foreground leading-relaxed">
                 Explore coastal risk levels across different regions using AI-powered analysis.
               </p>
             </div>
             <div
               className="map-container w-full rounded-2xl bg-card shadow-lg shadow-primary/10 border border-secondary/20 overflow-hidden"
-              style={{ height: "100vh", width: "100%", position: "relative" }}
+              style={{ height: "60vh", minHeight: 320, maxHeight: "80vh", width: "100%", position: "relative" }}
             >
               <MapContainer
                 center={[16, 10]}

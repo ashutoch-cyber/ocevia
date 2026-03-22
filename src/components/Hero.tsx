@@ -36,7 +36,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="hero-section relative min-h-[700px] flex items-center overflow-hidden pb-52">
+    <section className="hero-section relative min-h-[420px] xs:min-h-[600px] md:min-h-[700px] flex flex-col justify-center items-center overflow-hidden pb-24 md:pb-52">
       <div className="absolute inset-0 z-0">
         <img
           src={heroImage}
@@ -46,14 +46,14 @@ export default function Hero() {
         <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/50 to-transparent" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 w-full">
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="max-w-2xl"
         >
-          <h1 className="text-5xl md:text-7xl font-heading font-bold text-primary-foreground mb-6 leading-[1.1] tracking-[-0.02em]">
+          <h1 className="text-3xl xs:text-5xl md:text-7xl font-heading font-bold text-primary-foreground mb-4 md:mb-6 leading-[1.1] tracking-[-0.02em]">
             AI Powered <br />
             <span className="text-gradient-ocean">
               Ocean Risk Intelligence

@@ -16,9 +16,9 @@ const highlights = [
 
 export default function SamudraManthan() {
   return (
-    <section className="py-24 bg-card" id="samudra-manthan">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+    <section className="py-14 md:py-24 bg-card" id="samudra-manthan">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-16 items-start">
           {/* Left: Text */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -26,7 +26,7 @@ export default function SamudraManthan() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-primary mb-2 tracking-[-0.02em]">
+            <h2 className="text-2xl xs:text-3xl md:text-4xl font-heading font-bold text-primary mb-2 tracking-[-0.02em]">
               Samudra Manthan Project
             </h2>
             <p className="text-secondary font-semibold text-sm uppercase tracking-widest mb-6">
@@ -43,7 +43,7 @@ export default function SamudraManthan() {
             <p className="text-muted-foreground font-semibold mb-3">
               Key aspects of the initiative include:
             </p>
-            <ul className="space-y-3 mb-8">
+            <ul className="space-y-2 xs:space-y-3 mb-6 xs:mb-8">
               {bulletPoints.map((point, i) => (
                 <li
                   key={i}

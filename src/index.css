@@ -140,28 +140,73 @@
   }
 
   .page-container {
-    padding-top: 100px;
+    padding-top: 64px;
     max-width: 1200px;
     margin: 0 auto;
-    padding-left: 20px;
-    padding-right: 20px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  @media (min-width: 640px) {
+    .page-container {
+      padding-top: 80px;
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .page-container {
+      padding-top: 100px;
+      padding-left: 40px;
+      padding-right: 40px;
+    }
   }
 
   .risk-map-page .page-container {
-    padding-top: 96px;
-    padding-left: 40px;
-    padding-right: 40px;
+    padding-top: 56px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  @media (min-width: 640px) {
+    .risk-map-page .page-container {
+      padding-top: 80px;
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .risk-map-page .page-container {
+      padding-top: 96px;
+      padding-left: 40px;
+      padding-right: 40px;
+    }
   }
 
   .risk-map-page .page-title {
-    font-size: 42px;
+    font-size: 1.5rem;
     color: #1a4f8a;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
+  }
+  @media (min-width: 640px) {
+    .risk-map-page .page-title {
+      font-size: 2.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .risk-map-page .page-title {
+      font-size: 42px;
+    }
   }
 
   .risk-map-page .page-subtitle {
     color: #6c757d;
-    margin-bottom: 30px;
+    margin-bottom: 18px;
+    font-size: 1rem;
+  }
+  @media (min-width: 640px) {
+    .risk-map-page .page-subtitle {
+      margin-bottom: 30px;
+      font-size: 1.125rem;
+    }
   }
 
   .risk-map-page .map-container {

@@ -22,7 +22,7 @@ export default function Footer() {
         </svg>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 pb-4 grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-4 grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
         <div>
           <h3 className="font-heading font-bold text-2xl text-primary-foreground mb-2">
             NEER
@@ -36,7 +36,7 @@ export default function Footer() {
           </p>
         </div>
 
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4 mt-6 md:mt-0">
           <div className="w-full md:w-auto flex flex-col items-center">
             <h4 className="text-primary-foreground font-semibold mb-4 text-center">
               Quick Links

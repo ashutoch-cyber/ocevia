@@ -1,149 +1,107 @@
 
-import { useState, useEffect, useMemo, useRef } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, Menu, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Menu, X } from "lucide-react";
 
 export default function Navbar({ logoutButton, setActiveIframe }) {
   const location = useLocation();
   const isHome = location.pathname === "/";
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const SEARCH_DATA = [
-    { type: "location", name: "Puri Coast" },
-    { type: "location", name: "Gopalpur Coast" },
-    { type: "location", name: "Chilika Lake" },
-    { type: "location", name: "Chandrabhaga Coast" },
-    { type: "location", name: "Paradip Coast" },
-    { type: "location", name: "Bay of Bengal" },
-    { type: "location", name: "Singapore Port" },
-    { type: "metric", name: "Wave Height" },
-    { type: "metric", name: "Storm Surge" },
-    { type: "keyword", name: "Ocean Risk Intelligence" }
+  // Responsive nav links
+  const navLinks = [
+    { label: "Home", href: "/#", onClick: undefined },
+    { label: "Alerts", href: "#", onClick: (e) => { e.preventDefault(); setActiveIframe({ title: "Marine Alerts", url: "https://ocean-forecasting-ml.onrender.com/" }); } },
+    { label: "Insights", href: "#", onClick: (e) => { e.preventDefault(); setActiveIframe({ title: "Ocean Insights", url: "https://ohi-dashboard.onrender.com" }); } },
+    { label: "Data Sources", href: "/data-sources", onClick: undefined, isLink: true },
   ];
-
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  const handleChange = (value) => {
-    setQuery(value);
-    if (!value.trim()) {
-      setResults([]);
-      setShowDropdown(false);
-      return;
-    }
-    const filtered = SEARCH_DATA.filter(item =>
-      item.name.toLowerCase().includes(value.toLowerCase())
-    );
-    setResults(filtered);
-    setShowDropdown(true);
-  };
 
   return (
     <nav
-      className={`navbar ${isHome ? "navbar-transparent" : "navbar-solid"}`}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "10px 40px",
-        color: "white"
-      }}
+      className={`navbar ${isHome ? "navbar-transparent" : "navbar-solid"} w-full fixed top-0 z-50 transition-all`}
     >
-      {/* LEFT: LOGO */}
-      <div style={{ fontWeight: "bold", fontSize: "20px" }}>NEER</div>
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 md:py-4">
+        {/* LEFT: LOGO */}
+        <div className="font-bold text-lg md:text-2xl text-white select-none">NEER</div>
 
-      {/* CENTER: LINKS */}
-      <div style={{ display: "flex", gap: "38px", alignItems: "center" }}>
-        <a href="/#" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>Home</a>
-        <a
-          href="#"
-          style={{ color: "white", textDecoration: "none", fontWeight: 500 }}
-          onClick={e => {
-            e.preventDefault();
-            setActiveIframe({ title: "Marine Alerts", url: "https://ocean-forecasting-ml.onrender.com/" });
-          }}
-        >
-          Alerts
-        </a>
-        <a
-          href="#"
-          style={{ color: "white", textDecoration: "none", fontWeight: 500 }}
-          onClick={e => {
-            e.preventDefault();
-            setActiveIframe({ title: "Ocean Insights", url: "https://ohi-dashboard.onrender.com" });
-          }}
-        >
-          Insights
-        </a>
-        <Link to="/data-sources" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>Data Sources</Link>
-      </div>
-
-      {/* RIGHT: SEARCH + LOGOUT */}
-      <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
-        {/* Ensure parent container has position: relative */}
-        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-          <Search style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", color: "#b2cbe6", width: 24, height: 24 }} />
-          {/* STEP 4: UPDATE EXISTING INPUT FIELD */}
-          <input
-            className="search-input"
-            placeholder="Search ocean data, alerts, regions..."
-            style={{
-              padding: "12px 24px 12px 52px",
-              borderRadius: "28px",
-              border: "2px solid #b2cbe6",
-              background: "rgba(255,255,255,0.10)",
-              fontSize: "17px",
-              outline: "none",
-              boxShadow: "0 2px 12px rgba(30,77,123,0.10)",
-              width: 340,
-              transition: "box-shadow 0.2s"
-            }}
-            value={query}
-            onChange={e => handleChange(e.target.value)}
-            onFocus={() => query && setShowDropdown(true)}
-            onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-          />
-          {/* STEP 5: ADD DROPDOWN BELOW INPUT (KEEP POSITION) */}
-          {showDropdown && results.length > 0 && (
-            <div className="search-dropdown" style={{
-              position: "absolute",
-              top: "100%",
-              left: 0,
-              width: "100%",
-              background: "#1f4f7f",
-              borderRadius: 12,
-              marginTop: 8,
-              zIndex: 999
-            }}>
-              {results.map((item, index) => (
-                <div
-                  key={index}
-                  className="search-item"
-                  style={{
-                    padding: 10,
-                    cursor: "pointer"
-                  }}
-                  onClick={() => {
-                    setQuery(item.name);
-                    setShowDropdown(false);
-                  }}
-                >
-                  <div className="type" style={{ fontSize: 10, color: "#7ec8ff" }}>{item.type.toUpperCase()}</div>
-                  <div className="name" style={{ fontSize: 14, color: "white" }}>{item.name}</div>
-                </div>
-              ))}
-              <div className="search-footer" style={{
-                padding: 10,
-                borderTop: "1px solid rgba(255,255,255,0.2)",
-                opacity: 0.7
-              }}>
-                Show all results for "{query}"
-              </div>
-            </div>
+        {/* DESKTOP LINKS */}
+        <div className="hidden md:flex items-center gap-6 lg:gap-10">
+          {navLinks.map((item, idx) =>
+            item.isLink ? (
+              <Link
+                key={item.label}
+                to={item.href}
+                className="text-white font-medium hover:text-secondary transition-colors text-base md:text-lg"
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <a
+                key={item.label}
+                href={item.href}
+                className="text-white font-medium hover:text-secondary transition-colors text-base md:text-lg"
+                onClick={item.onClick}
+              >
+                {item.label}
+              </a>
+            )
           )}
         </div>
-        {logoutButton}
+
+        {/* RIGHT: LOGOUT (desktop) */}
+        <div className="hidden md:flex items-center gap-4">{logoutButton}</div>
+
+        {/* MOBILE MENU BUTTON */}
+        <button
+          className="md:hidden flex items-center justify-center text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-secondary"
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-label="Open menu"
+        >
+          {mobileOpen ? <X size={28} /> : <Menu size={28} />}
+        </button>
       </div>
+
+      {/* MOBILE MENU DRAWER */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex flex-col">
+          <div className="flex justify-end p-4">
+            <button
+              className="text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-secondary"
+              onClick={() => setMobileOpen(false)}
+              aria-label="Close menu"
+            >
+              <X size={28} />
+            </button>
+          </div>
+          <div className="flex flex-col items-center gap-6 mt-8">
+            {navLinks.map((item, idx) =>
+              item.isLink ? (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className="text-white font-semibold text-xl"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="text-white font-semibold text-xl"
+                  onClick={e => {
+                    if (item.onClick) item.onClick(e);
+                    setMobileOpen(false);
+                  }}
+                >
+                  {item.label}
+                </a>
+              )
+            )}
+            <div className="mt-6">{logoutButton}</div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

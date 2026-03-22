@@ -57,6 +57,7 @@ interface ApiResponse {
   reply?: string;
   response?: string;
   data?: WeatherData;
+  error?: string;
 }
 interface RequestBody {
   message: string;
@@ -70,6 +71,17 @@ interface RequestBody {
    CONSTANTS
 ============================================================ */
 const BASE_URL = 'http://127.0.0.1:8000/api';
+
+// ✅ Map display name → location key used in URL
+const LOCATION_CHIPS: { label: string; key: string }[] = [
+  { label: 'Puri',        key: 'puri'        },
+  { label: 'Paradip',     key: 'paradip'     },
+  { label: 'Chilika Lake',key: 'chilika'     },
+  { label: 'Chandipur',   key: 'chandipur'   },
+  { label: 'Balasore',    key: 'balasore'    },
+  { label: 'Gopalpur',    key: 'gopalpur'    },
+  { label: 'Konark',      key: 'konark'      },
+];
 
 const ODISHA_LOCATIONS_LIST = [
   'Puri', 'Konark', 'Paradip', 'Gopalpur', 'Chandipur',
@@ -107,6 +119,7 @@ const Chatbot: React.FC = () => {
   const [showWeatherCard,  setShowWeatherCard]  = useState(false);
   const [riskData,         setRiskData]         = useState<RiskData | null>(null);
   const [weatherLoading,   setWeatherLoading]   = useState(false);
+  const [weatherError,     setWeatherError]     = useState<string | null>(null);
   const [stormAlert,       setStormAlert]       = useState(false);
   const [stormMessage,     setStormMessage]     = useState('');
   const [isListening,      setIsListening]      = useState(false);
@@ -115,9 +128,9 @@ const Chatbot: React.FC = () => {
   const [planTime,         setPlanTime]         = useState('06:00');
   const [planActivity,     setPlanActivity]     = useState('fishing');
   const [planLocation,     setPlanLocation]     = useState('Puri');
-  const [activeLocation,   setActiveLocation]   = useState('puri');
+  const [activeLocKey,     setActiveLocKey]     = useState('puri');
 
-  // ✅ NEW — thinking popup states
+  // ✅ Thinking popup states
   const [showThinkBubble,  setShowThinkBubble]  = useState(true);
   const [hidingBubble,     setHidingBubble]     = useState(false);
 
@@ -132,7 +145,7 @@ const Chatbot: React.FC = () => {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isTyping]);
   useEffect(() => { setPlanDate(new Date().toISOString().split('T')[0]); }, []);
 
-  // ✅ NEW — show popup when closed, auto-hide after 5s, re-appear when chat closes
+  // ✅ Thinking popup: show on load and each time chat closes, auto-hide after 5s
   useEffect(() => {
     if (!isOpen) {
       setShowThinkBubble(true);
@@ -151,14 +164,36 @@ const Chatbot: React.FC = () => {
   };
 
   /* ============================================================
-     FETCH LIVE WEATHER
+     ✅ FETCH LIVE WEATHER — uses exact location key (no space mangling)
   ============================================================ */
-  const fetchWeather = useCallback(async (locationKey: string) => {
+  const fetchWeather = useCallback(async (locKey: string) => {
     setWeatherLoading(true);
+    setWeatherError(null);
     try {
-      const res  = await fetch(`${BASE_URL}/weather/?location=${locationKey.toLowerCase()}`);
-      const data: WeatherData = await res.json();
+      // ✅ Send the raw key like "puri", "chilika", "chandipur" — no spaces
+      const res = await fetch(`${BASE_URL}/weather/?location=${locKey}`);
+
+      // ✅ Check content-type before parsing — catches HTML error pages
+      const contentType = res.headers.get('content-type') ?? '';
+      if (!contentType.includes('application/json')) {
+        const text = await res.text();
+        console.error('Weather API returned non-JSON:', text.slice(0, 200));
+        setWeatherError('Backend error — check Django terminal');
+        setWeatherLoading(false);
+        return;
+      }
+
+      const data: WeatherData & { error?: string } = await res.json();
+
+      if (!res.ok || data.error) {
+        setWeatherError(data.error ?? `Error ${res.status}`);
+        setWeatherLoading(false);
+        return;
+      }
+
       setWeatherData(data);
+      setWeatherError(null);
+
       if (data.risks) {
         const r = data.risks;
         if (
@@ -169,18 +204,23 @@ const Chatbot: React.FC = () => {
           typeof r.safe_score === 'number'
         ) setRiskData(r);
       }
+
       if (Number(data.wave) > 2.5) {
         setStormAlert(true);
-        setStormMessage(`⚠️ High waves in ${data.location ?? locationKey}! Wave: ${data.wave}m. Avoid the sea!`);
+        setStormMessage(`⚠️ High waves in ${data.location ?? locKey}! Wave: ${data.wave}m. Avoid the sea!`);
       }
+
     } catch (e) {
       console.error('Weather fetch error:', e);
+      setWeatherError('Could not reach backend');
     }
     setWeatherLoading(false);
   }, []);
 
-  useEffect(() => { if (isOpen) fetchWeather(activeLocation); }, [isOpen]);       // eslint-disable-line
-  useEffect(() => { if (isOpen) fetchWeather(activeLocation); }, [activeLocation]); // eslint-disable-line
+  // Fetch on open
+  useEffect(() => { if (isOpen) fetchWeather(activeLocKey); }, [isOpen]); // eslint-disable-line
+  // Fetch on location chip change
+  useEffect(() => { if (isOpen) fetchWeather(activeLocKey); }, [activeLocKey]); // eslint-disable-line
 
   /* ============================================================
      SEND MESSAGE
@@ -205,9 +245,12 @@ const Chatbot: React.FC = () => {
     setIsTyping(true);
 
     try {
+      // ✅ Always send history as array, even if empty
       const body: RequestBody = {
         message: plannedDatetime ? `check ${plannedActivity} conditions` : currentInput.trim(),
-        history: messagesRef.current.map(m => ({ sender: m.sender, text: m.text })),
+        history: Array.isArray(messagesRef.current)
+          ? messagesRef.current.map(m => ({ sender: m.sender, text: m.text }))
+          : [],
       };
       if (plannedDatetime) body.planned_datetime = plannedDatetime;
       if (plannedActivity) body.planned_activity = plannedActivity;
@@ -218,6 +261,22 @@ const Chatbot: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(body),
       });
+
+      // ✅ Check for HTML error page
+      const contentType = response.headers.get('content-type') ?? '';
+      if (!contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Chat API returned non-JSON:', text.slice(0, 200));
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          sender: 'bot',
+          text: `❌ Server error ${response.status}. Check Django terminal for details.`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        }]);
+        if (!isOpenRef.current) setShowDot(true);
+        return;
+      }
+
       const data: ApiResponse = await response.json();
       setIsTyping(false);
 
@@ -225,6 +284,7 @@ const Chatbot: React.FC = () => {
       let replyText = '🌊 Response received.';
       if      (typeof data.reply    === 'string') replyText = data.reply;
       else if (typeof data.response === 'string') replyText = data.response;
+      else if (typeof data.error    === 'string') replyText = `❌ ${data.error}`;
 
       replyText = replyText
         .replace(/\*\*/g, '').replace(/\*/g, '')
@@ -249,8 +309,6 @@ const Chatbot: React.FC = () => {
               typeof r.safe_score === 'number'
             ) setRiskData(r);
           }
-          const newLocKey = d.location.toLowerCase().replace(' ', '');
-          setActiveLocation(newLocKey);
           if (Number(d.wave) > 2.5) {
             setStormAlert(true);
             setStormMessage(`⚠️ High waves in ${d.location}! Wave: ${d.wave}m. Avoid the sea!`);
@@ -259,7 +317,7 @@ const Chatbot: React.FC = () => {
       }
       if (!isOpenRef.current) setShowDot(true);
 
-    } catch {
+    } catch (err) {
       setIsTyping(false);
       const errTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setMessages(prev => [...prev, {
@@ -334,8 +392,6 @@ const Chatbot: React.FC = () => {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         * { font-family:'Inter',sans-serif; box-sizing:border-box; }
-
-        /* ── existing animations ── */
         @keyframes pulseGlow {
           0%  { box-shadow:0 0 0 0 rgba(56,189,248,.7),0 8px 32px rgba(14,165,233,.4); }
           70% { box-shadow:0 0 0 16px rgba(56,189,248,0),0 8px 32px rgba(14,165,233,.4); }
@@ -357,8 +413,6 @@ const Chatbot: React.FC = () => {
         @keyframes plannerIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
         @keyframes quickIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
         @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-
-        /* ── ✅ NEW — thinking popup animations ── */
         @keyframes popIn {
           0%   { opacity:0; transform:scale(.6) translateY(12px); }
           70%  { transform:scale(1.05) translateY(-2px); }
@@ -372,58 +426,36 @@ const Chatbot: React.FC = () => {
           0%,80%,100% { transform:translateY(0); opacity:.35; }
           40%          { transform:translateY(-5px); opacity:1; }
         }
-
-        /* ── ✅ NEW — thinking bubble styles ── */
         .think-bubble {
-          position:absolute;
-          bottom:82px;
-          right:0;
-          background:white;
-          color:#0c1e3d;
-          font-size:13px;
-          font-weight:600;
-          line-height:1.4;
+          position:absolute; bottom:82px; right:0;
+          background:white; color:#0c1e3d;
+          font-size:13px; font-weight:600; line-height:1.4;
           padding:11px 15px 11px 12px;
           border-radius:18px 18px 4px 18px;
           white-space:nowrap;
-          box-shadow:0 8px 32px rgba(0,0,0,.18), 0 2px 8px rgba(14,165,233,.15);
+          box-shadow:0 8px 32px rgba(0,0,0,.18),0 2px 8px rgba(14,165,233,.15);
           animation:popIn .45s cubic-bezier(.175,.885,.32,1.275) forwards;
-          display:flex;
-          align-items:center;
-          gap:9px;
-          cursor:pointer;
-          user-select:none;
+          display:flex; align-items:center; gap:9px;
+          cursor:pointer; user-select:none;
           border:1.5px solid rgba(14,165,233,.15);
         }
-        .think-bubble.hiding {
-          animation:popOut .35s ease forwards;
-        }
+        .think-bubble.hiding { animation:popOut .35s ease forwards; }
         .think-bubble::after {
-          content:'';
-          position:absolute;
-          bottom:-9px;
-          right:22px;
+          content:''; position:absolute; bottom:-9px; right:22px;
           width:0; height:0;
           border-left:9px solid transparent;
           border-right:0 solid transparent;
           border-top:9px solid white;
           filter:drop-shadow(0 2px 2px rgba(0,0,0,.08));
         }
-        .think-dots {
-          display:flex;
-          gap:3px;
-          flex-shrink:0;
-        }
+        .think-dots { display:flex; gap:3px; flex-shrink:0; }
         .think-dots span {
           width:5px; height:5px; border-radius:50%;
-          background:#0ea5e9;
-          display:block;
+          background:#0ea5e9; display:block;
           animation:thinkDot 1.1s infinite ease-in-out;
         }
         .think-dots span:nth-child(2) { animation-delay:.18s; }
         .think-dots span:nth-child(3) { animation-delay:.36s; }
-
-        /* ── existing styles ── */
         .sidebar-overlay { position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:9990;animation:fadeIn .3s ease forwards; }
         .custom-scrollbar::-webkit-scrollbar{width:5px}
         .custom-scrollbar::-webkit-scrollbar-track{background:transparent}
@@ -464,54 +496,47 @@ const Chatbot: React.FC = () => {
         </div>
       )}
 
-      {/* ============================================================
-          ✅ FLOATING BUBBLE + THINKING POPUP
-      ============================================================ */}
+      {/* Floating Bubble + Thinking Popup */}
       {!isOpen && (
         <div style={{ position:'fixed', bottom:'28px', right:'28px', zIndex:9999 }}>
-
-          {/* ── Thinking popup ── */}
           {showThinkBubble && (
-            <div
-              className={`think-bubble${hidingBubble ? ' hiding' : ''}`}
-              onClick={dismissBubble}
-              title="Click to dismiss"
-            >
-              <div className="think-dots">
-                <span /><span /><span />
-              </div>
+            <div className={`think-bubble${hidingBubble ? ' hiding' : ''}`} onClick={dismissBubble} title="Click to dismiss">
+              <div className="think-dots"><span /><span /><span /></div>
               Hey! How can I help you today? 🌊
             </div>
           )}
-
-          {/* ── Floating bubble button ── */}
-          <div
-            className="bubble-btn"
-            onClick={() => setIsOpen(true)}
-            style={{
-              position:'relative',
-              width:'72px', height:'72px', borderRadius:'50%',
-              background:'linear-gradient(135deg,#0284c7,#0ea5e9,#38bdf8)',
-              cursor:'pointer', display:'flex',
-              alignItems:'center', justifyContent:'center',
-            }}
-          >
+          <div className="bubble-btn" onClick={() => setIsOpen(true)} style={{ position:'relative', width:'72px', height:'72px', borderRadius:'50%', background:'linear-gradient(135deg,#0284c7,#0ea5e9,#38bdf8)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
             <span style={{ fontSize:'34px' }}>🌊</span>
-            {showDot && (
-              <div style={{ position:'absolute', top:'4px', right:'4px', width:'18px', height:'18px', borderRadius:'50%', background:'#ef4444', border:'2px solid white' }} />
-            )}
+            {showDot && <div style={{ position:'absolute', top:'4px', right:'4px', width:'18px', height:'18px', borderRadius:'50%', background:'#ef4444', border:'2px solid white' }} />}
           </div>
-
         </div>
       )}
 
-      {/* Overlay */}
       {isOpen && <div className="sidebar-overlay" onClick={() => setIsOpen(false)} />}
 
-      {/* Sidebar Panel */}
       {isOpen && (
-        <div className="sidebar-panel" style={{ position:'fixed', top:0, right:0, bottom:0, width:'50vw', height:'100vh', background:'linear-gradient(160deg,#0c1e3d 0%,#0a3d62 35%,#0e6b8c 70%,#0f9b8e 100%)', display:'flex', flexDirection:'column', zIndex:9995, boxShadow:'-20px 0 60px rgba(0,0,0,.5)', animation:'slideInRight .4s cubic-bezier(.175,.885,.32,1.275) forwards', borderLeft:'1px solid rgba(255,255,255,.1)', overflow:'hidden' }}>
-
+        <div
+          className="sidebar-panel"
+          style={{
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            maxWidth: '480px',
+            minWidth: '260px',
+            height: '100vh',
+            background: 'linear-gradient(160deg,#0c1e3d 0%,#0a3d62 35%,#0e6b8c 70%,#0f9b8e 100%)',
+            display: 'flex',
+            flexDirection: 'column',
+            zIndex: 9995,
+            boxShadow: '-20px 0 60px rgba(0,0,0,.5)',
+            animation: 'slideInRight .4s cubic-bezier(.175,.885,.32,1.275) forwards',
+            borderLeft: '1px solid rgba(255,255,255,.1)',
+            overflow: 'hidden',
+            padding: '0',
+          }}
+        >
           <div style={{ position:'absolute', inset:0, opacity:.04, pointerEvents:'none', zIndex:0, backgroundImage:`radial-gradient(circle at 20% 50%,white 1px,transparent 1px),radial-gradient(circle at 80% 20%,white 1px,transparent 1px)`, backgroundSize:'60px 60px,40px 40px' }} />
 
           {/* Header */}
@@ -539,16 +564,24 @@ const Chatbot: React.FC = () => {
             </svg>
           </div>
 
-          {/* Live Stats Bar */}
+          {/* ✅ Live Stats Bar */}
           <div style={{ margin:'0 20px 4px', zIndex:1, flexShrink:0 }}>
+            {/* ✅ Location chips — use .key not mangled label */}
             <div className="hide-scrollbar" style={{ display:'flex', gap:'6px', overflowX:'auto', marginBottom:'6px', paddingBottom:'2px' }}>
-              {['Puri','Paradip','Chilika Lake','Chandipur','Balasore','Gopalpur','Konark'].map(loc => (
-                <button key={loc} className={`loc-chip ${activeLocation === loc.toLowerCase().replace(' ','') ? 'active' : ''}`} onClick={() => setActiveLocation(loc.toLowerCase().replace(' ',''))}>{loc}</button>
+              {LOCATION_CHIPS.map(({ label, key }) => (
+                <button
+                  key={key}
+                  className={`loc-chip ${activeLocKey === key ? 'active' : ''}`}
+                  onClick={() => setActiveLocKey(key)}
+                >{label}</button>
               ))}
             </div>
+
             <div className="weather-mini" onClick={() => setShowWeatherCard(p => !p)} style={{ padding:'8px 16px', borderRadius:'12px', background:'rgba(255,255,255,.07)', border:'1px solid rgba(255,255,255,.1)', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', minHeight:'36px' }}>
               {weatherLoading ? (
                 <div className="shimmer" style={{ height:'14px', borderRadius:'6px', width:'70%' }} />
+              ) : weatherError ? (
+                <span style={{ color:'#fca5a5', fontSize:'12px' }}>⚠️ {weatherError}</span>
               ) : weatherData ? (
                 <span style={{ color:'rgba(255,255,255,.75)', fontSize:'12px', display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
                   📍 {String(weatherData.location ?? 'Odisha')} · 🌡️ {String(weatherData.temp ?? '--')}°C · 💨 {String(weatherData.wind ?? '--')} km/h · 🌊 {String(weatherData.wave ?? '--')}m
@@ -560,7 +593,7 @@ const Chatbot: React.FC = () => {
               <span style={{ color:'rgba(255,255,255,.4)', fontSize:'11px', marginLeft:'8px', flexShrink:0 }}>{showWeatherCard ? '▲' : '▼ details'}</span>
             </div>
 
-            {showWeatherCard && weatherData && !weatherLoading && (
+            {showWeatherCard && weatherData && !weatherLoading && !weatherError && (
               <div style={{ marginTop:'6px', padding:'16px 18px', borderRadius:'14px', background:'rgba(255,255,255,.08)', backdropFilter:'blur(16px)', border:'1px solid rgba(255,255,255,.12)', animation:'expandCard .25s ease forwards' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'10px' }}>
                   <div style={{ flex:1 }}>
@@ -572,7 +605,7 @@ const Chatbot: React.FC = () => {
                       <span>🌡️ {String(weatherData.temp ?? '--')}°C</span>
                       {weatherData.wind             && <span>💨 {weatherData.wind} km/h</span>}
                       {weatherData.wave             && <span>🌊 {weatherData.wave}m</span>}
-                      {weatherData.humidity         && <span>💧 {weatherData.humidity}% humidity</span>}
+                      {weatherData.humidity         && <span>💧 {weatherData.humidity}%</span>}
                       {weatherData.pressure         && <span>🔵 {weatherData.pressure} hPa</span>}
                       {weatherData.dissolved_oxygen && <span>🧪 {weatherData.dissolved_oxygen} mg/L O₂</span>}
                       {weatherData.ph               && <span>⚗️ pH {weatherData.ph}</span>}
@@ -598,9 +631,9 @@ const Chatbot: React.FC = () => {
                     <div style={{ color:'rgba(255,255,255,.5)', fontSize:'10px', fontWeight:'600', letterSpacing:'0.8px', marginBottom:'10px' }}>RISK ASSESSMENT</div>
                     <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
                       {([
-                        { label:'🌀 Cyclone', value: riskData.cyclone },
-                        { label:'🌧️ Rain',    value: riskData.rain },
-                        { label:'⛈️ Storm',   value: riskData.storm },
+                        { label:'🌀 Cyclone', value: riskData.cyclone   },
+                        { label:'🌧️ Rain',    value: riskData.rain      },
+                        { label:'⛈️ Storm',   value: riskData.storm     },
                         { label:'🌊 Waves',   value: riskData.high_wave },
                       ] as { label: string; value: number }[]).map(({ label, value }) => {
                         const c = getRiskColor(value);
@@ -623,7 +656,7 @@ const Chatbot: React.FC = () => {
                     </div>
                   </>
                 )}
-                <button onClick={() => fetchWeather(activeLocation)} style={{ marginTop:'12px', width:'100%', padding:'7px', borderRadius:'8px', background:'rgba(255,255,255,.06)', border:'1px solid rgba(255,255,255,.12)', color:'rgba(255,255,255,.6)', fontSize:'12px', cursor:'pointer', transition:'background .15s' }} onMouseOver={e => (e.currentTarget.style.background='rgba(255,255,255,.12)')} onMouseOut={e => (e.currentTarget.style.background='rgba(255,255,255,.06)')}>🔄 Refresh live data</button>
+                <button onClick={() => fetchWeather(activeLocKey)} style={{ marginTop:'12px', width:'100%', padding:'7px', borderRadius:'8px', background:'rgba(255,255,255,.06)', border:'1px solid rgba(255,255,255,.12)', color:'rgba(255,255,255,.6)', fontSize:'12px', cursor:'pointer', transition:'background .15s' }} onMouseOver={e => (e.currentTarget.style.background='rgba(255,255,255,.12)')} onMouseOut={e => (e.currentTarget.style.background='rgba(255,255,255,.06)')}>🔄 Refresh live data</button>
               </div>
             )}
           </div>
