@@ -10,7 +10,7 @@ import SearchResultsPage from "./pages/SearchResultsPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
 import { EventProvider } from "./context/EventContext";
-import Chatbot from "./components/Chatbot";
+import Chatbot from "./components/ChatBot";
 const queryClient = new QueryClient();
 
 
