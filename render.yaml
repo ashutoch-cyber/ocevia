@@ -1,0 +1,11 @@
+yamlservices:
+  - type: web
+    name: ocevia
+    env: node
+    branch: hub
+    buildCommand: npm install && npm run build
+    startCommand: npx serve -s dist -l 10000
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
