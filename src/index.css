@@ -1,3 +1,72 @@
+/* --- Search Input Text Color Fix --- */
+.search-input {
+  color: white !important;
+}
+
+.search-input::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+/* --- Navbar Transparency Logic --- */
+.navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.navbar-transparent {
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.navbar-solid {
+  background: #1f4f7f;
+  backdrop-filter: blur(10px);
+}
+
+/* --- Hero Section Overlap Fix --- */
+.hero-section {
+  margin-top: 0 !important;
+  padding-top: 120px;
+}
+/* --- Navbar Search Dropdown Styles --- */
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: #1f4f7f;
+  border-radius: 12px;
+  margin-top: 8px;
+  z-index: 999;
+}
+
+.search-item {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.search-item:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.type {
+  font-size: 10px;
+  color: #7ec8ff;
+}
+
+.name {
+  font-size: 14px;
+  color: white;
+}
+
+.search-footer {
+  padding: 10px;
+  border-top: 1px solid rgba(255,255,255,0.2);
+  opacity: 0.7;
+}
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
 
 @tailwind base;

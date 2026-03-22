@@ -10,30 +10,35 @@ import SearchResultsPage from "./pages/SearchResultsPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AdminPanel from "./pages/AdminPanel.jsx";
 import { EventProvider } from "./context/EventContext";
-
+import Chatbot from "./components/Chatbot";
 const queryClient = new QueryClient();
 
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <EventProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/risk-map" element={<RiskMapPage />} />
-            <Route path="/data-sources" element={<DataSourcesPage />} />
-            <Route path="/search" element={<SearchResultsPage />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </EventProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <EventProvider>
+          <BrowserRouter>
+
+            <Chatbot />
+
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/risk-map" element={<RiskMapPage />} />
+              <Route path="/data-sources" element={<DataSourcesPage />} />
+              <Route path="/search" element={<SearchResultsPage />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+
+          </BrowserRouter>
+        </EventProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

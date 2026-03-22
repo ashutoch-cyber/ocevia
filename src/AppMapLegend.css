@@ -1,0 +1,31 @@
+.map-legend {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  font-size: 14px;
+  z-index: 1000;
+}
+.map-legend h4 {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.map-legend div {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+.red { background: red; }
+.orange { background: orange; }
+.yellow { background: gold; }
+.green { background: green; }

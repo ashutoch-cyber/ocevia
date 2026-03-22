@@ -1,5 +1,8 @@
 from collections.abc import Sequence
+from .chatbot import chatbot_response
 
+def chatbot_reply(message):
+    return chatbot_response(message)
 
 COASTAL_LOCATIONS = [
     {"name": "Puri Coast", "risk": "Medium"},

@@ -64,7 +64,7 @@ export default function NewsEvents() {
             >
               {/* Duplicate for infinite loop */}
               {[...events.pastEvents, ...events.pastEvents].map((event, idx) => (
-                <div className={styles.eventCard} key={event.id || idx}>
+                <div className={styles.eventCard} key={`${event.id || 'event'}-${idx}`}>
                   <div className={styles.eventDate}>{event.date}</div>
                   <div className={styles.eventTitle}>{event.title}</div>
                   <div className={styles.eventDesc}>{event.description}</div>

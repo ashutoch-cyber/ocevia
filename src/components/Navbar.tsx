@@ -1,215 +1,149 @@
+
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search, Menu, X } from "lucide-react";
-import {
-  filterSearchItems,
-  getCategoryLabel,
-  getInitialSearchIndex,
-  loadSearchIndex,
-  type SearchItem,
-} from "@/lib/searchIndex";
 
-const navLinks = ["Home", "Alerts", "Insights", "Data Sources"];
-
-export default function Navbar() {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [allSearchItems, setAllSearchItems] = useState<SearchItem[]>(() => getInitialSearchIndex());
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const searchContainerRef = useRef<HTMLDivElement | null>(null);
+export default function Navbar({ logoutButton, setActiveIframe }) {
   const location = useLocation();
-  const navigate = useNavigate();
   const isHome = location.pathname === "/";
 
-  const liveResults = useMemo(() => {
-    return filterSearchItems(allSearchItems, query, 8);
-  }, [allSearchItems, query]);
+  const SEARCH_DATA = [
+    { type: "location", name: "Puri Coast" },
+    { type: "location", name: "Gopalpur Coast" },
+    { type: "location", name: "Chilika Lake" },
+    { type: "location", name: "Chandrabhaga Coast" },
+    { type: "location", name: "Paradip Coast" },
+    { type: "location", name: "Bay of Bengal" },
+    { type: "location", name: "Singapore Port" },
+    { type: "metric", name: "Wave Height" },
+    { type: "metric", name: "Storm Surge" },
+    { type: "keyword", name: "Ocean Risk Intelligence" }
+  ];
 
-  const shouldShowDropdown = isSearchFocused && query.trim().length > 0;
-  const getSectionHref = (section: string) => {
-    if (section === "Home") {
-      return "/#";
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const handleChange = (value) => {
+    setQuery(value);
+    if (!value.trim()) {
+      setResults([]);
+      setShowDropdown(false);
+      return;
     }
-
-    const anchor = section.toLowerCase().replace(/\s/g, "-");
-    return isHome ? `#${anchor}` : `/#${anchor}`;
-  };
-
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-
-    loadSearchIndex().then((items) => {
-      if (mounted) {
-        setAllSearchItems(items);
-      }
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (!searchContainerRef.current) {
-        return;
-      }
-
-      if (!searchContainerRef.current.contains(event.target as Node)) {
-        setIsSearchFocused(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, []);
-
-  const openSearchResultsPage = () => {
-    const normalized = query.trim();
-    navigate(`/search?q=${encodeURIComponent(normalized)}`);
-    setIsSearchFocused(false);
-  };
-
-  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      openSearchResultsPage();
-    }
-  };
-
-  const handleResultClick = (result: SearchItem) => {
-    navigate(result.path);
-    setQuery("");
-    setIsSearchFocused(false);
+    const filtered = SEARCH_DATA.filter(item =>
+      item.name.toLowerCase().includes(value.toLowerCase())
+    );
+    setResults(filtered);
+    setShowDropdown(true);
   };
 
   return (
     <nav
-      className={`${isHome ? "navbar home-navbar" : "navbar page-navbar"} transition-all duration-500 ${
-        isHome
-          ? isScrolled
-            ? "bg-primary py-3 shadow-xl"
-            : "py-5"
-          : "py-3 shadow-xl"
-      }`}
+      className={`navbar ${isHome ? "navbar-transparent" : "navbar-solid"}`}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "10px 40px",
+        color: "white"
+      }}
     >
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/#" className="font-heading font-bold text-2xl tracking-[-0.02em] text-primary-foreground leading-none">
-          NEER
-        </Link>
+      {/* LEFT: LOGO */}
+      <div style={{ fontWeight: "bold", fontSize: "20px" }}>NEER</div>
 
-        {/* Desktop nav */}
-        <div className="hidden lg:flex items-center gap-8 text-primary-foreground/90 text-sm font-medium">
-          {navLinks.map((item) => (
-            item === "Data Sources" ? (
-              <Link
-                key={item}
-                to="/data-sources"
-                className="hover:text-secondary transition-colors"
-              >
-                {item}
-              </Link>
-            ) : (
-              <a
-                key={item}
-                href={getSectionHref(item)}
-                className="hover:text-secondary transition-colors"
-              >
-                {item}
-              </a>
-            )
-          ))}
-        </div>
-
-        {/* Search */}
-        <div ref={searchContainerRef} className="relative hidden md:block">
-          <input
-            type="text"
-            placeholder="Search ocean data, alerts, regions..."
-            className="bg-primary-foreground/10 border border-primary-foreground/20 rounded-full py-2 pl-10 pr-4 text-sm text-primary-foreground placeholder:text-primary-foreground/50 focus:outline-none focus:ring-2 focus:ring-secondary w-64 transition-all"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onFocus={() => setIsSearchFocused(true)}
-            onKeyDown={handleInputKeyDown}
-          />
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-primary-foreground/50" />
-
-          {shouldShowDropdown ? (
-            <div className="absolute top-[calc(100%+10px)] left-0 w-80 rounded-2xl border border-primary-foreground/20 bg-primary p-2 shadow-xl z-[1100]">
-              {liveResults.length === 0 ? (
-                <div className="px-3 py-2 text-sm text-primary-foreground/80">No matches found</div>
-              ) : (
-                liveResults.map((result) => (
-                  <button
-                    key={result.id}
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => handleResultClick(result)}
-                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-primary-foreground/10 transition-colors"
-                  >
-                    <p className="text-xs uppercase tracking-wide text-secondary font-semibold mb-0.5">
-                      {getCategoryLabel(result.category)}
-                    </p>
-                    <p className="text-sm text-primary-foreground font-medium leading-tight">{result.title}</p>
-                  </button>
-                ))
-              )}
-
-              <button
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={openSearchResultsPage}
-                className="w-full mt-1 text-left px-3 py-2 rounded-xl border border-primary-foreground/20 hover:bg-primary-foreground/10 transition-colors text-sm text-primary-foreground/90"
-              >
-                Show all results for "{query.trim()}"
-              </button>
-            </div>
-          ) : null}
-        </div>
-
-        {/* Mobile toggle */}
-        <button
-          className="lg:hidden text-primary-foreground"
-          onClick={() => setMobileOpen(!mobileOpen)}
+      {/* CENTER: LINKS */}
+      <div style={{ display: "flex", gap: "38px", alignItems: "center" }}>
+        <a href="/#" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>Home</a>
+        <a
+          href="#"
+          style={{ color: "white", textDecoration: "none", fontWeight: 500 }}
+          onClick={e => {
+            e.preventDefault();
+            setActiveIframe({ title: "Marine Alerts", url: "https://ocean-forecasting-ml.onrender.com/" });
+          }}
         >
-          {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+          Alerts
+        </a>
+        <a
+          href="#"
+          style={{ color: "white", textDecoration: "none", fontWeight: 500 }}
+          onClick={e => {
+            e.preventDefault();
+            setActiveIframe({ title: "Ocean Insights", url: "https://ohi-dashboard.onrender.com" });
+          }}
+        >
+          Insights
+        </a>
+        <Link to="/data-sources" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>Data Sources</Link>
       </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="lg:hidden bg-primary/95 backdrop-blur-md px-6 pb-6 pt-2 space-y-4">
-          {navLinks.map((item) => (
-            item === "Data Sources" ? (
-              <Link
-                key={item}
-                to="/data-sources"
-                className="block text-primary-foreground/90 text-sm font-medium hover:text-secondary transition-colors"
-                onClick={() => setMobileOpen(false)}
-              >
-                {item}
-              </Link>
-            ) : (
-              <a
-                key={item}
-                href={getSectionHref(item)}
-                className="block text-primary-foreground/90 text-sm font-medium hover:text-secondary transition-colors"
-                onClick={() => setMobileOpen(false)}
-              >
-                {item}
-              </a>
-            )
-          ))}
+      {/* RIGHT: SEARCH + LOGOUT */}
+      <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+        {/* Ensure parent container has position: relative */}
+        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+          <Search style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", color: "#b2cbe6", width: 24, height: 24 }} />
+          {/* STEP 4: UPDATE EXISTING INPUT FIELD */}
+          <input
+            className="search-input"
+            placeholder="Search ocean data, alerts, regions..."
+            style={{
+              padding: "12px 24px 12px 52px",
+              borderRadius: "28px",
+              border: "2px solid #b2cbe6",
+              background: "rgba(255,255,255,0.10)",
+              fontSize: "17px",
+              outline: "none",
+              boxShadow: "0 2px 12px rgba(30,77,123,0.10)",
+              width: 340,
+              transition: "box-shadow 0.2s"
+            }}
+            value={query}
+            onChange={e => handleChange(e.target.value)}
+            onFocus={() => query && setShowDropdown(true)}
+            onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+          />
+          {/* STEP 5: ADD DROPDOWN BELOW INPUT (KEEP POSITION) */}
+          {showDropdown && results.length > 0 && (
+            <div className="search-dropdown" style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              width: "100%",
+              background: "#1f4f7f",
+              borderRadius: 12,
+              marginTop: 8,
+              zIndex: 999
+            }}>
+              {results.map((item, index) => (
+                <div
+                  key={index}
+                  className="search-item"
+                  style={{
+                    padding: 10,
+                    cursor: "pointer"
+                  }}
+                  onClick={() => {
+                    setQuery(item.name);
+                    setShowDropdown(false);
+                  }}
+                >
+                  <div className="type" style={{ fontSize: 10, color: "#7ec8ff" }}>{item.type.toUpperCase()}</div>
+                  <div className="name" style={{ fontSize: 14, color: "white" }}>{item.name}</div>
+                </div>
+              ))}
+              <div className="search-footer" style={{
+                padding: 10,
+                borderTop: "1px solid rgba(255,255,255,0.2)",
+                opacity: 0.7
+              }}>
+                Show all results for "{query}"
+              </div>
+            </div>
+          )}
         </div>
-      )}
+        {logoutButton}
+      </div>
     </nav>
   );
 }

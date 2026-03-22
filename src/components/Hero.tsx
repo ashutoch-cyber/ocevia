@@ -36,7 +36,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative min-h-[700px] flex items-center overflow-hidden pt-20 md:pt-24 pb-52">
+    <section className="hero-section relative min-h-[700px] flex items-center overflow-hidden pb-52">
       <div className="absolute inset-0 z-0">
         <img
           src={heroImage}
